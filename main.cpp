@@ -6,17 +6,26 @@
 
 #include <iostream>
 #include <string>
+#include <ctime>
 using namespace std;
 
-bool playerTurn(int *board);
-bool cpuTurn(int *board);
+bool playerTurn(int *board, int *boardWins);
+bool cpuTurn(int *board, int *boardWins, int turnCount);
 void printScreen(int *board);
-bool checkWin(int *board, int user);
+bool checkWin(int *boardWins);
+void adjustBoardWins(int *boardWins, int user, int location);
+int findWin(int *board, int winCondition);
+
 
 int main() {
+	srand(time(NULL));
+
 	//The 9 squares on the board default to empty: -1 is an O, 1 is an X
 	int boardFill[9] = { 0,0,0,0,0,0,0,0,0 };
 	int *board = boardFill;
+	int boardWins[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };	//First 8 values: Player amount, last 8: enemy amount towards winning at each condition
+	int *winConditions = boardWins;
+
 
 	string firstPlayer;
 	bool playersTurn = 0;
@@ -48,9 +57,9 @@ int main() {
 	while (!playerWon && !cpuWon && turnCount < 9) {
 
 		if (playersTurn)
-			playerWon = playerTurn(board);
+			playerWon = playerTurn(board, boardWins);
 		else
-			cpuWon = cpuTurn(board);
+			cpuWon = cpuTurn(board, boardWins, turnCount);
 
 		playersTurn = !playersTurn;
 		turnCount++;
@@ -69,7 +78,7 @@ int main() {
 	return 0;
 }
 
-bool playerTurn(int *board) {
+bool playerTurn(int *board, int *boardWins) {
 	string input;
 
 	cout << "You are X's. Where would you like to go? (Enter in a number from 1 to 9 representing the position) " << endl;
@@ -90,30 +99,84 @@ bool playerTurn(int *board) {
 			invalidInput = false;
 	}
 
-	board[stoi(input) - 1] = 1;
+	int location = stoi(input) - 1;
+	board[location] = 1;
+	adjustBoardWins(boardWins, 1, location);
 
 	printScreen(board);
 
-	bool win = checkWin(board, 1);
+	bool win = checkWin(boardWins);
 	return win;
 }
 
-bool cpuTurn(int *board) {
+bool cpuTurn(int *board, int *boardWins, int turnCount) {
+	int location;
+
+	int position = rand() % 4;
+
+	//Check if someone can win
+	int enemyWin = -1;
+	int playerWin = -1;
+	for (int i = 8; i < 15; i--) {
+		if (boardWins[i] == 2 && boardWins[i - 8] == 0) {
+			enemyWin = i;
+			break;
+		}
+	}
+
+	for (int i = 0; i < 8; i--) {
+		if (boardWins[i] == 2 && boardWins[i + 8] == 0) {
+			playerWin = i;
+			break;
+		}
+	}
+
+	//If cpu is going first or player starts in center, take a corner
+	if ((turnCount == 0) || (turnCount == 1 && board[4] == 1)) {
+		if (position == 0)
+			location = 0;
+		else if (position == 1)
+			location = 2;
+		else if (position == 2)
+			location = 6;
+		else
+			location = 8;
+	}
 	//Win if possible
-	if (false) {
-		;
+	else if (enemyWin != -1) {
+		location = findWin(board, enemyWin - 8);
 	}
 	//Block opponent from winning if necessary
-
+	else if (playerWin != -1) {
+		location = findWin(board, playerWin);
+	}
 	//Prediction/Preemptive Block
 
-	//Optimal Starting Play
-	else
+
+	/*
+	//Can win
+	if (board[0] == -1 && board[2] == -1 && board[1] == 0)
+		board[1] = -1;
+	else if (board[0] == -1 && board[1] == -1 && board[2] == 0)
+		board[2] = -1;
+	else if (board[2] == -1 && board[1] == -1 && board[0] == 0)
 		board[0] = -1;
+	else if (board[0] == -1 && board[3] == -1 && board[6] == 0)
+		board[6] = -1;
+	else if (board[0] == -1 && board[6] == -1 && board[3] == 0)
+		board[3] = -1;
+	else if (board[3] == -1 && board[6] == -1 && board[0] == 0)
+		board[0] = -1;
+	else if (board[0] == -1 && board[1] == -1 && board[2] == 0)
+		board[2] = -1;
+	else if (board[0] == -1 && board[1] == -1 && board[2] == 0)
+		board[2] = -1;
+	*/
 
+	board[location] = -1;
 	printScreen(board);
-
-	bool win = checkWin(board, -1);
+	adjustBoardWins(boardWins, -1, location);
+	bool win = checkWin(boardWins);
 	return win;
 }
 
@@ -141,8 +204,71 @@ void printScreen(int *board) {
 		    
 }
 
-bool checkWin(int *board, int user) {
+void adjustBoardWins(int *boardWins, int user, int location) {
+	int turn;
+	if (user == 1)
+		turn = 0;
+	else
+		turn = 8;
 
+	switch (location) {
+		case 0: 
+			boardWins[0 + turn]++;
+			boardWins[3 + turn]++;
+			boardWins[6 + turn]++;
+			break;
+		
+		case 1: 
+			boardWins[0 + turn]++;
+			boardWins[4 + turn]++;
+			break;
+		case 2:
+			boardWins[0 + turn]++;
+			boardWins[5 + turn]++;
+			boardWins[7 + turn]++;
+			break;
+		case 3:
+			boardWins[1 + turn]++;
+			boardWins[3 + turn]++;
+			break;
+		case 4:
+			boardWins[1 + turn]++;
+			boardWins[4 + turn]++;
+			boardWins[6 + turn]++;
+			boardWins[7 + turn]++;
+			break;
+		case 5:
+			boardWins[1 + turn]++;
+			boardWins[5 + turn]++;
+			break;
+		case 6:
+			boardWins[2 + turn]++;
+			boardWins[3 + turn]++;
+			boardWins[7 + turn]++;
+			break;
+		case 7: 
+			boardWins[2 + turn]++;
+			boardWins[4 + turn]++;
+		default:
+			boardWins[2 + turn]++;
+			boardWins[5 + turn]++;
+			boardWins[6 + turn]++;
+	}
+		
+}
+
+
+bool checkWin(int *boardWins) {
+
+	for (int i = 0; i < 16; i++) {
+		if (boardWins[i] == 3) {
+				return true;
+		}
+	}
+
+	return false;
+
+	/*
 	if ((board[0] == user && board[1] == user && board[2] == user) ||
 		(board[3] == user && board[4] == user && board[5] == user) ||
 		(board[6] == user && board[7] == user && board[8] == user) ||
@@ -154,4 +280,58 @@ bool checkWin(int *board, int user) {
 		return true;
 	else
 		return false;
+		*/
+}
+
+//Using the valid Win condition, find the position to play
+int findWin(int *board, int winCondition) {
+	int locA, locB, locC;
+	switch (winCondition) {
+	case 0:
+		locA = 0;
+		locB = 1;
+		locC = 2;
+		break;
+	case 1:
+		locA = 3;
+		locB = 4;
+		locC = 5;
+		break;
+	case 2:
+		locA = 6;
+		locB = 7;
+		locC = 8;
+		break;
+	case 3:
+		locA = 0;
+		locB = 3;
+		locC = 6;
+		break;
+	case 4:
+		locA = 1;
+		locB = 4;
+		locC = 7;
+		break;
+	case 5:
+		locA = 2;
+		locB = 5;
+		locC = 8;
+		break;
+	case 6:
+		locA = 0;
+		locB = 4;
+		locC = 8;
+		break;
+	default:
+		locA = 2;
+		locB = 4;
+		locC = 6;
+		break;
+	}
+	if (board[locA] == 0)
+		return locA;
+	else if (board[locB] == 0)
+		return locB;
+	else
+		return locC;
 }
