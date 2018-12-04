@@ -3,6 +3,9 @@
 // Tic-Tac-Toe
 // Tristan Hildahl and Ben Michael
 ////////////////////////////////////
+// Sources
+// https://www.wikihow.com/Win-at-Tic-Tac-Toe: Used for logic behind how to win/draw Tic-Tac-Toe
+////////////////////////////////////
 
 #include <iostream>
 #include <string>
@@ -66,11 +69,11 @@ int main() {
 	}
 
 	if (playerWon)
-		cout << "Congratulations! You Win!" << endl;
+		cout << "Congratulations! You Win!\nWait, that shouldn't have happened..." << endl;
 	else if (cpuWon)
 		cout << "Too bad, you Lose!";
 	else
-		"Draw!";
+		cout << "Draw!";
 
 	int wait;
 	cin >> wait;
@@ -110,38 +113,30 @@ bool playerTurn(int *board, int *boardWins) {
 }
 
 bool cpuTurn(int *board, int *boardWins, int turnCount) {
-	int location;
+	int location = -1;
 
 	int position = rand() % 4;
 
 	//Check if someone can win
 	int enemyWin = -1;
 	int playerWin = -1;
-	for (int i = 8; i < 15; i--) {
+	for (int i = 8; i < 16; i++) {
 		if (boardWins[i] == 2 && boardWins[i - 8] == 0) {
 			enemyWin = i;
 			break;
 		}
 	}
 
-	for (int i = 0; i < 8; i--) {
+	for (int i = 0; i < 8; i++) {
 		if (boardWins[i] == 2 && boardWins[i + 8] == 0) {
 			playerWin = i;
 			break;
 		}
 	}
 
-	//If cpu is going first or player starts in center, take a corner
-	if ((turnCount == 0) || (turnCount == 1 && board[4] == 1)) {
-		if (position == 0)
-			location = 0;
-		else if (position == 1)
-			location = 2;
-		else if (position == 2)
-			location = 6;
-		else
-			location = 8;
-	}
+	//If you go 2nd and they took a corner, go for the center
+	if ((turnCount == 1) && board[4] == 0) //(board[0] == 1 || board[2] == 1 || board[6] == 1 || board[8] == 1))
+		location = 4;
 	//Win if possible
 	else if (enemyWin != -1) {
 		location = findWin(board, enemyWin - 8);
@@ -150,28 +145,80 @@ bool cpuTurn(int *board, int *boardWins, int turnCount) {
 	else if (playerWin != -1) {
 		location = findWin(board, playerWin);
 	}
-	//Prediction/Preemptive Block
+	//If player is taking corners from going first, play defensive by taking an edge
+	else if (turnCount == 3 && board[4] == -1) {
+		if ((board[0] == 1 && board[8] == 1) || (board[2] == 1 && board[6] == 1)) {
+			if (position == 0)
+				location = 1;
+			else if (position == 1)
+				location = 3;
+			else if (position == 2)
+				location = 5;
+			else
+				location = 7;
+		}
+		//If player takes a corner then an opposing edge
+		else if (board[0] == 1 && board[5] == 1) {
+			location = 1;
+		}
+		else if (board[0] == 1 && board[7] == 1) {
+			location = 3;
+		}
+		else if (board[2] == 1 && board[3] == 1) {
+			location = 1;
+		}
+		else if (board[2] == 1 && board[7] == 1) {
+			location = 5;
+		}
+		else if (board[6] == 1 && board[1] == 1) {
+			location = 3;
+		}
+		else if (board[6] == 1 && board[5] == 1) {
+			location = 7;
+		}
+		else if (board[8] == 1 && board[3] == 1) {
+			location = 7;
+		}
+		else if (board[8] == 1 && board[1] == 1) {
+			location = 5;
+		}
+	}
 
+	//Prediction/Preemptive Block or win
+	//Prioritize corners
+	else {
+		//Try to pick a corner that the player does not have an edge adjacent
+		if (board[0] == 0 && board[1] == 0 && board[3] == 0)
+			location = 0;
+		else if (board[2] == 0 && board[1] == 0 && board[5] == 0)
+			location = 2;
+		else if (board[6] == 0 && board[3] == 0 && board[7] == 0)
+			location = 6;
+		else if(board[8] == 0 && board[5] == 0 && board[7] == 0)
+			location = 8;
+		//or pick an open edge
+		else {
+			if (board[0] == 0)
+				location = 0;
+			else if (board[2] == 0)
+				location = 2;
+			else if (board[6] == 0)
+				location = 6;
+			else if (board[8] == 0)
+				location = 8;
+		}
+	}
 
-	/*
-	//Can win
-	if (board[0] == -1 && board[2] == -1 && board[1] == 0)
-		board[1] = -1;
-	else if (board[0] == -1 && board[1] == -1 && board[2] == 0)
-		board[2] = -1;
-	else if (board[2] == -1 && board[1] == -1 && board[0] == 0)
-		board[0] = -1;
-	else if (board[0] == -1 && board[3] == -1 && board[6] == 0)
-		board[6] = -1;
-	else if (board[0] == -1 && board[6] == -1 && board[3] == 0)
-		board[3] = -1;
-	else if (board[3] == -1 && board[6] == -1 && board[0] == 0)
-		board[0] = -1;
-	else if (board[0] == -1 && board[1] == -1 && board[2] == 0)
-		board[2] = -1;
-	else if (board[0] == -1 && board[1] == -1 && board[2] == 0)
-		board[2] = -1;
-	*/
+	//If somehow none of the above cases work out and no location has been chose, take any available location.
+	//This prevents the program from replacing a square that already has a value in it.
+	if(location == -1) {
+		for (int i = 0; i < 9; i++) {
+			if (board[i] == 0) {
+				location = i;
+				break;
+			}
+		}
+	}
 
 	board[location] = -1;
 	printScreen(board);
@@ -205,19 +252,17 @@ void printScreen(int *board) {
 }
 
 void adjustBoardWins(int *boardWins, int user, int location) {
-	int turn;
+	int turn = 0;
 	if (user == 1)
 		turn = 0;
-	else
+	else if (user == -1)
 		turn = 8;
-
 	switch (location) {
 		case 0: 
 			boardWins[0 + turn]++;
 			boardWins[3 + turn]++;
 			boardWins[6 + turn]++;
 			break;
-		
 		case 1: 
 			boardWins[0 + turn]++;
 			boardWins[4 + turn]++;
@@ -249,6 +294,7 @@ void adjustBoardWins(int *boardWins, int user, int location) {
 		case 7: 
 			boardWins[2 + turn]++;
 			boardWins[4 + turn]++;
+			break;
 		default:
 			boardWins[2 + turn]++;
 			boardWins[5 + turn]++;
@@ -267,20 +313,6 @@ bool checkWin(int *boardWins) {
 	}
 
 	return false;
-
-	/*
-	if ((board[0] == user && board[1] == user && board[2] == user) ||
-		(board[3] == user && board[4] == user && board[5] == user) ||
-		(board[6] == user && board[7] == user && board[8] == user) ||
-		(board[0] == user && board[3] == user && board[6] == user) ||
-		(board[1] == user && board[4] == user && board[7] == user) ||
-		(board[2] == user && board[5] == user && board[8] == user) ||
-		(board[0] == user && board[4] == user && board[8] == user) ||
-		(board[2] == user && board[4] == user && board[6] == user))
-		return true;
-	else
-		return false;
-		*/
 }
 
 //Using the valid Win condition, find the position to play
