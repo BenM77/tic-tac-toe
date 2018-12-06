@@ -157,7 +157,7 @@ bool cpuTurn(int *board, int *boardWins, int turnCount) {
 			else
 				location = 7;
 		}
-		//If player takes a corner then an opposing edge
+		//If player takes a corner then take an opposing edge
 		else if (board[0] == 1 && board[5] == 1) {
 			location = 1;
 		}
@@ -187,29 +187,46 @@ bool cpuTurn(int *board, int *boardWins, int turnCount) {
 	//Prediction/Preemptive Block or win
 	//Prioritize corners
 	else {
-		//Try to pick a corner that the player does not have an edge adjacent
-		if (board[0] == 0 && board[1] == 0 && board[3] == 0)
-			location = 0;
-		else if (board[2] == 0 && board[1] == 0 && board[5] == 0)
-			location = 2;
-		else if (board[6] == 0 && board[3] == 0 && board[7] == 0)
-			location = 6;
-		else if(board[8] == 0 && board[5] == 0 && board[7] == 0)
-			location = 8;
-		//or pick an open edge
-		else {
-			if (board[0] == 0)
+		//Pick the corner with the most empty, adjacent edge squares
+		int corner0 = 0, corner2 = 0, corner6 = 0, corner8 = 0;
+		if (board[1] == 0) {
+			corner0++;
+			corner2++;
+		}
+		if (board[3] == 0) {
+			corner0++;
+			corner6++;
+		}
+		if (board[5] == 0) {
+			corner2++;
+			corner8++;
+		}
+		if (board[7] == 0) {
+			corner6++;
+			corner8++;
+		}
+
+		for (int i = 2; i >= 0; i--) {
+			if (corner0 == i && board[0] == 0) {
 				location = 0;
-			else if (board[2] == 0)
+				break;
+			}
+			else if (corner2 == i && board[2] == 0) {
 				location = 2;
-			else if (board[6] == 0)
+				break;
+			}
+			else if (corner6 == i && board[6] == 0) {
 				location = 6;
-			else if (board[8] == 0)
+				break;
+			}
+			else if (corner8 == i && board[8] == 0) {
 				location = 8;
+				break;
+			}
 		}
 	}
 
-	//If somehow none of the above cases work out and no location has been chose, take any available location.
+	//If somehow none of the above cases work out and no location has been chosen, all available locations are equally good choices.
 	//This prevents the program from replacing a square that already has a value in it.
 	if(location == -1) {
 		for (int i = 0; i < 9; i++) {
