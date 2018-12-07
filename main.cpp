@@ -4,7 +4,11 @@
 // Tristan Hildahl and Ben Michael
 ////////////////////////////////////
 // Sources
-// https://www.wikihow.com/Win-at-Tic-Tac-Toe: Used for logic behind how to win/draw Tic-Tac-Toe
+// https://www.wikihow.com/Win-at-Tic-Tac-Toe
+// Used as a baseline for logic behind how to win/never lose Tic-Tac-Toe depending on the situation
+//
+// https://stackoverflow.com/questions/9773607/optimal-algorithm-for-seeing-who-won-a-tick-tac-toe-game
+// Answer by Ali Ferhat helped us to conceptualize the best way to see if someone has won the game
 ////////////////////////////////////
 
 #include <iostream>
